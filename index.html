@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>jQuery Mobile</title>
+	<link rel="stylesheet" href="style.css" type="text/css" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+	<script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+	<script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+	<script src="p5.min.js"></script>
+	<script>
+		$(document).on("mobileinit", function(event){
+			console.log("mobileinit");
+		});
+		$(window).on("orientationchange", function(event){
+			$('#orientation').text('This device is in '+ event.orientation + ' mode.');
+		});
+
+		//real time data
+		// temp and humidity
+		$.ajax({
+			url: "http://10.208.7.19/arduino/analog/0",
+			dataType: 'json',
+		}).done(function(result) {
+			console.log(result);
+			//console.log(result.humidity);
+			$('#realHT').append("<h2>Humidity: " +result.humidity+ "%</h2>");
+			$('#realHT').append("<h2>Temperature: " +result.temperature+ "*C</h2>");
+		});
+		//AQ
+		$.ajax({
+			url: "http://10.208.7.19/arduino/analog/1",
+			dataType: 'json',
+		}).done(function(result) {
+			console.log(result);
+			//console.log(result.airquality);
+			var AQ = result.airquality;
+			$('#realAQ').append("<h2>Air Quality: " +AQ+ "</h2>");
+
+			if (AQ <= 100){
+				$('#realAQ').append("<h2>Fresh Air</h2>");
+			} else if (AQ <= 300){
+				$('#realAQ').append("<h2>Low Pollution</h2>");
+			}else if(AQ <= 500){
+				$('#realAQ').append("<h2>High Pollution!!!</h2>");
+			}else {
+				$('#realAQ').append("<h2>High pollution! Force signal active</h2>");
+			}
+		});
+
+		//stored data
+		var humidityData;
+		var tempData;
+		var AQData;
+		$.ajax({
+			method:"GET",
+			url: "http://172.26.105.126:8888/rest/rest.php/readings",
+			dataType: 'json'
+		}).success(function(data) {
+			// console.log(data);
+			// console.log(data.api.humidity)
+			humidityData = data.api.humidity;
+			tempData = data.api.temp;
+			AQData = data.api.aq;
+			new p5(humiditySketch, 'humidityp5');
+			new p5(tempSketch, 'tempp5');
+			new p5(AQSketch, 'aqp5');
+
+
+			// drawHumidity(data);
+		});
+
+		// function drawHumidity(data){
+		// 	function draw() {
+		// 		background(200);
+		// 	}
+		//
+		// 	function
+		// }
+
+		var humiditySketch = function(p) {
+			p.setup = function(){
+				p.createCanvas(300,500);
+				p.background(240);
+			}
+			p.draw = function(){
+				for (i=0; i < humidityData.length; i++) {
+					var value = humidityData[i];
+					p.point(value*3, i);
+					p.fill(255);
+				}
+			}
+		}
+
+		var tempSketch = function(p) {
+			p.setup = function(){
+				p.createCanvas(300,500);
+				p.background(240);
+			}
+			p.draw = function(){
+				for (i=0; i < tempData.length; i++) {
+					var value = tempData[i];
+					p.point(value*6, i);
+					p.fill(255);
+				}
+			}
+		}
+
+		var AQSketch = function(p) {
+			p.setup = function(){
+				p.createCanvas(300,500);
+				p.background(240);
+			}
+			p.draw = function(){
+				console.log(AQData);
+				for (i=0; i < AQData.length; i++) {
+					var value = AQData[i];
+					p.point(value, i);
+					p.fill(255);
+				}
+			}
+		}
+
+	</script>
+</head>
+
+<body class="ui-mobile-viewport ui-overlay-c iphone-320">
+
+
+	<div id="main" data-role="page">
+		<div data-role="header">
+			<div data-role="navbar" class="ui-navbar ui-mini" role="navigation">
+				<ul class = "main-nav ui-grid-d">
+					<li>
+						<a data-transition="flip" data-icon="bars" data-inline="true" class="ui-btn-inline" href="#panel"></a>
+					</li>
+					<li>
+						<img data-inline="true" src="image/topHat.png" alt="tophat" />
+					</li>
+					<li>
+						<h1>Top Hat</h1>
+					</li>
+				</ul>
+      </div>
+		</div>
+
+
+		<div class="ui-content">
+			<p id="orientation"></p>
+			<div id="realHT"></div>
+			<div id="realAQ"></div>
+
+		</div>
+
+		<div data-role="footer">
+			<p><a href="#main" data-transition="flip">back to top</a></p>
+		</div>
+
+
+
+		//panel
+		<div data-role="panel" id="panel">
+			<h2>MENU</h2>
+			<p><a href="#main" data-rel="close">Real-time data</a></p>
+			<p><a href="#humidity" data-rel="close">Humidity</a></p>
+			<p><a href="#temp" data-rel="close">Temperature</a></p>
+			<p><a href="#aq" data-rel="close">Air Quality</a></p>
+			<a data-rel="close">Close</a>
+			</p>
+		</div>
+	</div>
+
+	<div data-role="page" id="humidity">
+		<h1>Humidity</h1>
+		<div id="humidityp5"></div>
+	</div>
+
+	<div data-role="page" id="temp">
+		<h1>Temperature</h1>
+		<div id="tempp5"></div>
+	</div>
+
+	<div data-role="page" id="aq">
+		<h1>Air Quality</h1>
+		<div id="aqp5"></div>
+	</div>
+
+
+
+</body>
+</html>
